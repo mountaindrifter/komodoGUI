@@ -22,6 +22,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
+import javax.swing.JOptionPane;
 import javax.swing.JWindow;
 import javax.swing.SwingUtilities;
 
@@ -124,6 +125,8 @@ public class StartupProgressDialog extends JFrame {
         final Process daemonProcess =
         	shouldStartZCashd ? clientCaller.startDaemon() : null;
 
+        setProgressText("Waiting for daemon to start...");
+		
         Thread.sleep(POLL_PERIOD); // just a little extra
 
         int iteration = 0;
@@ -138,14 +141,18 @@ public class StartupProgressDialog extends JFrame {
             	info = clientCaller.getDaemonRawRuntimeInfo();
             } catch (IOException e)
             {
-            	if (iteration > 4)
-            	{
-                    setProgressText("Waiting for daemon..." + Integer.toString((40-iteration)));
-            	}
-                // wait at least 1 minute for daemon to start up
-                else if (iteration > 40)
+                setProgressText("Waiting for daemon to start..." + Integer.toString(40 - iteration));
+                
+                // wait 15 - POLL_PERIOD (1.5sec) intervals before asking user to continue waiting...
+            	if (iteration > 15)
                 {
-                    throw new Exception("Daemon failed to respond to getDaemonRawRuntimeInfo()", e);
+                    int dialogButton = JOptionPane.YES_NO_OPTION;
+                    int dialogResult = JOptionPane.showConfirmDialog (null, "Daemon taking too long to start, continue waiting?","Warning",dialogButton);
+                    if(dialogResult != JOptionPane.YES_OPTION){
+                        break;
+                    } else {
+                        iteration = 0;
+                    }
                 }
                 continue;
             }
